@@ -1,3 +1,7 @@
+# directory with all disk images
+images/
+
+
 ### C++ ###
 # Prerequisites
 *.d

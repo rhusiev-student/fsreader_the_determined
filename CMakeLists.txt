@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
 
 # Pipeline
-set(PROJECT executable_name)
+set(PROJECT determined_fsreader)
 set(ENABLE_PVS_STUDIO OFF)
 set(ENABLE_UBSan OFF)
 set(ENABLE_ASAN OFF)
 set(ENABLE_TSan OFF)
 set(ENABLE_MSAN OFF)
-##set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
+#set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-checks=*")
 
 
 #! Check every comment after the "#!"
