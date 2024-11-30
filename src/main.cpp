@@ -1,17 +1,17 @@
+#include "./args.hpp"
+#include "./fat16_reader_the_prime.hpp"
+#include <boost/program_options.hpp>
 #include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <boost/program_options.hpp>
-#include "./args.hpp"
-#include "./fat16_reader_the_prime.hpp"
 
 namespace po = boost::program_options;
 
 int main(int argc, char **argv) {
-    po::options_description opt_descr{
-        "Usage: " + std::string(argv[0]) + " [-h|--help] <file>\n"
-        "A determined filesystem reader"};
+    po::options_description opt_descr{"Usage: " + std::string(argv[0]) +
+                                      " [-h|--help] <file>\n"
+                                      "A determined filesystem reader"};
     opt_descr.add_options()("help,h", "Show help message");
     Args parser{argc, argv, opt_descr};
 
@@ -25,15 +25,13 @@ int main(int argc, char **argv) {
         std::cerr << "Exactly one file must be specified." << std::endl;
         return 1;
     }
-    std::filesystem::path file = unrecognized[0];
+    std::filesystem::path filename = unrecognized[0];
 
-    try {
-        fat16_boot_sector boot_sector = read_boot_sector(file);
-        print_boot_sector(boot_sector);
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        return 1;
-    }
+    fat16 partition;
+    partition.boot_sector = read_boot_sector(filename);
+    partition.root_files =
+        get_root_files(partition.boot_sector, filename);
+    print_fat(partition);
 
     return 0;
 }

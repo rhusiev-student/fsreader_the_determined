@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <vector>
 
 #pragma pack(push, 1)
 struct fat16_boot_sector { // alignas(16)
@@ -24,15 +25,63 @@ struct fat16_boot_sector { // alignas(16)
     uint8_t empty;
     uint8_t extended_boot_signature;
     uint32_t volume_serial_number;
-    char volume_label[11 + 1]; // +1 for '\0'
+    // here ends BOOT_SECTOR_BYTES_BEFORE_CHAR
+    char volume_label[11 + 1];   // +1 for '\0'
     char filesystem_type[8 + 1]; // +1 for '\0'
+    bool correct_signature;
 };
+
+struct _fat16_directory_entry {
+    char name[11];
+    uint8_t attributes;
+    uint8_t reserved;
+    uint8_t creation_time_in_tensecs;
+    uint16_t creation_time_hms;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t first_cluster2;
+    uint16_t modified_time_hms;
+    uint16_t modified_date;
+    uint16_t first_cluster1;
+    uint32_t file_size;
+};
+
+struct fat16_directory_entry {
+    uint8_t attributes;
+    uint8_t reserved;
+    uint8_t creation_time_in_tensecs;
+    uint16_t creation_time_hms;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t first_cluster2;
+    uint16_t modified_time_hms;
+    uint16_t modified_date;
+    uint16_t first_cluster1;
+    uint32_t file_size;
+    char name[11 + 2]; // +1 for '\0', +1 for '.'
+};
+
 #pragma pack(pop)
 
-#define BYTES_BEFORE_CHARS 42
+struct fat16 {
+    fat16_boot_sector boot_sector;
+    std::vector<uint16_t> fat;
+    std::vector<fat16_directory_entry> root_files;
+};
+
+#define BOOT_SECTOR_BYTES_BEFORE_CHAR 42
+#define DIRECTORY_ENTRY_BYTES_BEFORE_CHAR 21
 
 fat16_boot_sector read_boot_sector(std::filesystem::path path);
 
-void print_boot_sector(fat16_boot_sector boot_sector);
+void print_fat(fat16 partition);
+
+std::vector<uint16_t> get_fat(fat16_boot_sector boot_sector,
+                              std::filesystem::path path);
+
+std::vector<fat16_directory_entry> get_root_files(fat16_boot_sector boot_sector,
+                                                  std::filesystem::path path);
+
+void print_file(fat16_directory_entry file, fat16_boot_sector boot_sector);
 
 #endif // INCLUDE_FAT16_READER_THE_PRIME_HPP_
