@@ -28,7 +28,7 @@ fat16_boot_sector read_boot_sector(std::filesystem::path path) {
 void print_fat(fat16 partition) {
     std::cout << "Volume label:                 "
               << partition.boot_sector.volume_label << std::endl;
-    std::cout << "Filesystem type:              "
+    std::cout << "Filesystem type:             "
               << partition.boot_sector.filesystem_type << std::endl;
     std::cout << "Sector size:                  "
               << partition.boot_sector.bytes_per_sector << " B" << std::endl;
