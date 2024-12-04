@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
     auto filesize = std::filesystem::file_size(filename);
     if (filesize < 1024) {
-        std::cout << "Not fat16, fat32 or ext2" << std::endl;
+        std::cout << "Not fat12, fat16, fat32 or ext2" << std::endl;
         return 0;
     }
     if (filesize >= 2048) {

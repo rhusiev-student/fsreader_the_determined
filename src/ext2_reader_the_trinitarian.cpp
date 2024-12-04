@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
+#include <string>
 
 ext2_supablock read_supablock(std::filesystem::path path) {
     std::ifstream file(path, std::ios::binary);
@@ -37,6 +39,17 @@ ext2_supablock read_supablock(std::filesystem::path path) {
         }
     }
     supablock.s_last_mounted[last_nonspace + 1] = '\0';
+
+    uint32_t block_size = supablock.s_log_block_size;
+    uint64_t root_directory_offset = block_size * supablock.s_first_data_block;
+    file.seekg(root_directory_offset);
+
+    ext2_directory_entry entry;
+    while (file.read(reinterpret_cast<char *>(&entry), sizeof(ext2_directory_entry))) {
+        if (entry.name[0] == 0) break; 
+        supablock.root_files.push_back(entry);
+    }
+
     return supablock;
 }
 
@@ -109,4 +122,57 @@ void print_ext2(ext2_supablock partition) {
         std::cout << std::hex << static_cast<uint16_t>(partition.s_uuid[i]);
     }
     std::cout << std::endl;
+    std::cout << "Root Directory Entries:\n";
+    for (const auto& file : partition.root_files) {
+        print_file_ext2(file, partition);
+    }
+}
+
+
+std::string ext2_date_to_string(uint16_t date, uint16_t time_hms) {
+    int year = ((date >> 9) & 0x7F) + 1980;
+    int month = (date >> 5) & 0x0F;
+    int day = date & 0x1F;
+
+    int hour = (time_hms >> 11) & 0x1F;
+    int minute = (time_hms >> 5) & 0x3F;
+    int second = (time_hms & 0x1F) * 2;
+
+    char buffer[20];
+    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d",
+             year, month, day, hour, minute, second);
+    return std::string(buffer);
+}
+
+void print_file_ext2(const ext2_directory_entry& file, const ext2_supablock& superblock) {
+    std::cout << ((file.attributes & 0x01) ? "        +  " : "        -  ");
+    std::cout << ((file.attributes & 0x02) ? "     +  " : "     -  ");
+    std::cout << ((file.attributes & 0x04) ? "     +  " : "     -  ");
+    std::cout << ((file.attributes & 0x08) ? "        +  " : "        -  ");
+    std::cout << ((file.attributes & 0x0f) ? "        +  " : "        -  ");
+    std::cout << ((file.attributes & 0x20) ? "      +  " : "      -  ");
+
+    std::string cluster =
+            std::to_string(file.first_cluster_low) + " (" +
+            std::to_string(file.first_cluster_low * (1 << (10 + superblock.s_log_block_size))) +
+            " B)";
+    int to_add_spaces = 12 - cluster.size();
+    std::cout << std::string((to_add_spaces >= 0 ? to_add_spaces : 0), ' ')
+              << cluster;
+
+    if (!(file.attributes & 0x10)) {
+        std::string file_size = std::to_string(file.file_size);
+        int to_add_spaces = 12 - file_size.size();
+        std::cout << std::string((to_add_spaces >= 0 ? to_add_spaces : 0), ' ')
+                  << file_size << " B  ";
+    } else { 
+        std::cout << "           DIR  ";
+    }
+
+    std::cout << ext2_date_to_string(file.creation_date, file.creation_time_hms)
+              << ' '
+              << ext2_date_to_string(file.modified_date, file.modified_time_hms)
+              << "  ";
+
+    std::cout << file.name << std::endl;
 }

@@ -72,6 +72,21 @@ struct _ext2_supablock {          // alignas(16)
     uint32_t s_reserved[204]; /* Padding to the end of the block */
 };
 
+struct ext2_directory_entry {
+    char name[11];
+    uint8_t attributes;
+    uint8_t reserved;
+    uint8_t creation_time_in_tensecs;
+    uint16_t creation_time_hms;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t first_cluster_high;
+    uint16_t modified_time_hms;
+    uint16_t modified_date;
+    uint16_t first_cluster_low;
+    uint32_t file_size;
+};
+
 struct ext2_supablock {           // alignas(16)
     uint32_t s_inodes_count;      /* 0x00: Inodes count */
     uint32_t s_blocks_count;      /* 0x04: Blocks count */
@@ -136,11 +151,14 @@ struct ext2_supablock {           // alignas(16)
     uint8_t s_prealloc_blocks; /* 0xCC: Nr of blocks to try to preallocate */
     uint8_t s_prealloc_dir_blocks; /* 0xCD: Nr to preallocate for dirs */
     uint16_t s_padding1;
+    std::vector<ext2_directory_entry> root_files;
 };
 #pragma pack(pop)
 
 ext2_supablock read_supablock(std::filesystem::path path);
 
 void print_ext2(ext2_supablock partition);
+
+void print_file_ext2(const ext2_directory_entry& file, const ext2_supablock& superblock);
 
 #endif // INCLUDE_EXT2_READER_THE_TRINITARIAN_HPP_
