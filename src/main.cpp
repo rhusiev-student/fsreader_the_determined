@@ -2,7 +2,7 @@
 #include "./fat16_reader_the_prime.hpp"
 #include "./fat32_reader_the_FAnTastik.hpp"
 #include "./ext2_reader_the_trinitarian.hpp"
-#include "./fat12_reader_the_trinitarian.hpp"
+#include "./fat12_reader_the_marvelous.hpp"
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <iostream>
