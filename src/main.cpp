@@ -3,6 +3,7 @@
 #include "./fat32_reader_the_FAnTastik.hpp"
 #include "./ext2_reader_the_trinitarian.hpp"
 #include "./fat12_reader_the_marvelous.hpp"
+#include "./exfat_reader_the_breathtaking.hpp"
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <iostream>
@@ -45,6 +46,33 @@ int main(int argc, char **argv) {
             print_ext2(supablock);
             return 0;
         }
+    }
+
+    exfat_boot_sector ex_boot_sector{};
+    file.read(reinterpret_cast<char*>(&ex_boot_sector), sizeof(ex_boot_sector));
+
+    if (strncmp(ex_boot_sector.filesystem_type, "EXFAT", 5) == 0) {
+    std::cout << "Found EXFAT" << std::endl;
+
+    uint32_t fat_size_in_sectors_ex = (ex_boot_sector.num_reserved_sectors + 
+                                    (ex_boot_sector.num_fats * ex_boot_sector.bytes_per_sector)) / 
+                                    ex_boot_sector.bytes_per_sector;
+
+    uint64_t total_sectors = ex_boot_sector.num_reserved_sectors;
+    total_sectors += ex_boot_sector.num_fats * fat_size_in_sectors_ex;
+    total_sectors += ex_boot_sector.root_cluster; 
+    total_sectors += ex_boot_sector.sectors_per_cluster;
+
+    uint32_t data_sectors = total_sectors - (ex_boot_sector.num_reserved_sectors + 
+                                            (ex_boot_sector.num_fats * fat_size_in_sectors_ex) + 
+                                            ex_boot_sector.root_cluster);
+
+    uint64_t cluster_count = data_sectors / ex_boot_sector.sectors_per_cluster;
+    exfat partition;
+    partition.boot_sector_ex = ex_boot_sector;
+    partition.root_files = get_root_files_exfat(partition.boot_sector_ex, filename);
+    print_exfat(partition);
+    return 0;
     }
 
     fat32_boot_sector boot_sector{};
