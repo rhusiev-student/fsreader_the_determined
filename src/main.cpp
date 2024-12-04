@@ -2,6 +2,7 @@
 #include "./fat16_reader_the_prime.hpp"
 #include "./fat32_reader_the_FAnTastik.hpp"
 #include "./ext2_reader_the_trinitarian.hpp"
+#include "./fat12_reader_the_trinitarian.hpp"
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <iostream>
@@ -71,7 +72,14 @@ int main(int argc, char **argv) {
     uint64_t cluster_count = data_sectors / boot_sector.sectors_per_cluster;
     //calculates the number of clusters by dividing the number of data sectors by the sectors per cluster
 
-    if  (4084 <= cluster_count && cluster_count <= 65524) {
+   if (cluster_count  <= 4084) {
+        // FAT12
+        fat12 partition;
+        partition.boot_sector = read_boot_sector12(filename);
+        partition.root_files = get_root_files12(partition.boot_sector, filename);
+        print_fat12(partition);
+    }
+    else if  (4084 <= cluster_count && cluster_count <= 65524) {
         // FAT16
         std::cout << "Found FAT16" << std::endl;
         fat16 partition;
