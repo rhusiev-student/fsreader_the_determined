@@ -69,8 +69,8 @@ struct fat16 {
     std::vector<fat16_directory_entry> root_files;
 };
 
-#define BOOT_SECTOR_BYTES_BEFORE_CHAR 42
-#define DIRECTORY_ENTRY_BYTES_BEFORE_CHAR 21
+#define BOOT_SECTOR_BYTES_BEFORE_CHAR_FAT16 42
+#define DIRECTORY_ENTRY_BYTES_BEFORE_CHAR_FAT16 21
 
 fat16_boot_sector read_boot_sector(std::filesystem::path path);
 

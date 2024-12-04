@@ -16,7 +16,7 @@ fat32_boot_sector read_boot_sector32(const std::filesystem::path& path) {
     fat32_boot_sector boot_sector{};
 
     file.read(reinterpret_cast<char *>(&boot_sector),
-              BOOT_SECTOR_BYTES_BEFORE_CHAR + 11);
+              BOOT_SECTOR_BYTES_BEFORE_CHAR_FAT32 + 11);
     boot_sector.volume_label[11] = '\0';
     file.read(reinterpret_cast<char *>(&boot_sector.filesystem_type), 8);
     boot_sector.filesystem_type[8] = '\0';

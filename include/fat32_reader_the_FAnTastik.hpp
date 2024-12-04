@@ -61,9 +61,9 @@ struct fat32 {
     std::vector<fat32_directory_entry> root_files;
 };
 
-#define BOOT_SECTOR_BYTES_BEFORE_CHAR 71
-#define DIRECTORY_ENTRY_BYTES_BEFORE_CHAR 21
-#define MAX_FILE_LEN 13
+#define BOOT_SECTOR_BYTES_BEFORE_CHAR_FAT32 71
+#define DIRECTORY_ENTRY_BYTES_BEFORE_CHAR_FAT32 21
+#define MAX_FILE_LEN_FAT32 13
 
 fat32_boot_sector read_boot_sector32(const std::filesystem::path& path);
 

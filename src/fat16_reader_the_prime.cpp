@@ -1,5 +1,4 @@
 #include "./fat16_reader_the_prime.hpp"
-#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -11,7 +10,7 @@ fat16_boot_sector read_boot_sector(std::filesystem::path path) {
     std::ifstream file(path, std::ios::binary);
     fat16_boot_sector boot_sector;
     file.read(reinterpret_cast<char *>(&boot_sector),
-              BOOT_SECTOR_BYTES_BEFORE_CHAR + 11);
+              BOOT_SECTOR_BYTES_BEFORE_CHAR_FAT16 + 12);
     boot_sector.volume_label[11] = '\0';
     file.read(reinterpret_cast<char *>(&boot_sector.filesystem_type), 8);
     boot_sector.filesystem_type[8] = '\0';
@@ -28,7 +27,7 @@ fat16_boot_sector read_boot_sector(std::filesystem::path path) {
 void print_fat(fat16 partition) {
     std::cout << "Volume label:                 "
               << partition.boot_sector.volume_label << std::endl;
-    std::cout << "Filesystem type:             "
+    std::cout << "Filesystem type:              "
               << partition.boot_sector.filesystem_type << std::endl;
     std::cout << "Sector size:                  "
               << partition.boot_sector.bytes_per_sector << " B" << std::endl;
@@ -88,7 +87,7 @@ std::vector<fat16_directory_entry> get_root_files(fat16_boot_sector boot_sector,
         }
         fat16_directory_entry dir_entry;
         memcpy(&dir_entry, &root_files_raw[i].attributes,
-               DIRECTORY_ENTRY_BYTES_BEFORE_CHAR);
+               DIRECTORY_ENTRY_BYTES_BEFORE_CHAR_FAT16);
         dir_entry.name[11] = '\0';
         dir_entry.name[12] = '\0';
         strncpy(dir_entry.name, root_files_raw[i].name, 12);
@@ -119,7 +118,7 @@ std::vector<fat16_directory_entry> get_root_files(fat16_boot_sector boot_sector,
     return root_files;
 }
 
-#define MAX_FILE_LEN 13
+#define MAX_FILE_LEN_FAT16 13
 
 std::string fatdate_to_string(uint16_t date, uint16_t time) {
     std::string day = std::to_string(date & 0x1F);

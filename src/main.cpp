@@ -1,6 +1,7 @@
 #include "./args.hpp"
 #include "./fat16_reader_the_prime.hpp"
 #include "./fat32_reader_the_FAnTastik.hpp"
+#include "./ext2_reader_the_trinitarian.hpp"
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <iostream>
@@ -29,9 +30,23 @@ int main(int argc, char **argv) {
     }
     std::filesystem::path filename = unrecognized[0];
 
-    // We need to know which FAT is this
-    fat32_boot_sector boot_sector{};
     std::ifstream file(filename, std::ios::binary);
+
+    auto filesize = std::filesystem::file_size(filename);
+    if (filesize < 1024) {
+        std::cout << "Not fat16, fat32 or ext2" << std::endl;
+        return 0;
+    }
+    if (filesize >= 2048) {
+        ext2_supablock supablock = read_supablock(filename);
+        if (supablock.s_magic == 0xEF53) {
+            std::cout << "Found ext2" << std::endl;
+            print_ext2(supablock);
+            return 0;
+        }
+    }
+
+    fat32_boot_sector boot_sector{};
     file.read(reinterpret_cast<char*>(&boot_sector), sizeof(fat32_boot_sector));
 
     uint32_t root_dir_sectors = ((boot_sector.max_num_root_files * 32) +
@@ -53,17 +68,19 @@ int main(int argc, char **argv) {
                              root_dir_sectors);
     //calculates the number of sectors dedicated to data. It subtracts the reserved sectors, the FAT tables,
     // and the root directory sectors from the total sectors to get the remaining data sectors.
-    uint32_t cluster_count = data_sectors / boot_sector.sectors_per_cluster;
+    uint64_t cluster_count = data_sectors / boot_sector.sectors_per_cluster;
     //calculates the number of clusters by dividing the number of data sectors by the sectors per cluster
 
     if  (4084 <= cluster_count && cluster_count <= 65524) {
         // FAT16
+        std::cout << "Found FAT16" << std::endl;
         fat16 partition;
         partition.boot_sector = read_boot_sector(filename);
         partition.root_files = get_root_files(partition.boot_sector, filename);
         print_fat(partition);
     } else if (65525 <= cluster_count && cluster_count <= 4294967295) {
         // FAT32
+        std::cout << "Found FAT32" << std::endl;
         fat32 partition;
         partition.boot_sector = read_boot_sector32(filename);
         partition.root_files = get_root_files32(partition.boot_sector, filename);
