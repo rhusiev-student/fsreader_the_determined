@@ -1,5 +1,5 @@
 #include "./fat32_reader_the_FAnTastik.hpp"
-#include <algorithm>
+#include "./date_to_string.hpp"
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -92,25 +92,11 @@ std::vector<fat32_directory_entry> get_root_files32(const fat32_boot_sector& boo
         fat32_directory_entry entry{};
         file.read(reinterpret_cast<char*>(&entry), sizeof(fat32_directory_entry));
         if (entry.name[0] == 0x00) break; //end, no more valid entries exist
-        if (entry.name[0] == 0xE5) continue;
+        if (entry.name[0] == static_cast<char>(0xE5)) continue;
         root_files.push_back(entry);
     }
 
     return root_files;
-}
-
-std::string fatdate_to_string32(uint16_t date, uint16_t time) {
-    std::string day = std::to_string(date & 0x1F);
-    std::string month = std::to_string((date >> 5) & 0x0F);
-    std::string year = std::to_string(1980 + ((date >> 9) & 0x7F));
-    std::string hours = std::to_string((time >> 11) & 0x1F);
-    std::string minutes = std::to_string((time >> 5) & 0x3F);
-    std::string seconds = std::to_string(2 * (time & 0x1F));
-    return year + '-' + (month.size() == 1 ? "0" + month : month) + '-' +
-           (day.size() == 1 ? "0" + day : day) + ' ' +
-           (hours.size() == 1 ? "0" + hours : hours) + ':' +
-           (minutes.size() == 1 ? "0" + minutes : minutes) + ':' +
-           (seconds.size() == 1 ? "0" + seconds : seconds);
 }
 
 void print_file32(const fat32_directory_entry& file, const fat32_boot_sector& boot_sector) {
@@ -138,9 +124,9 @@ void print_file32(const fat32_directory_entry& file, const fat32_boot_sector& bo
         std::cout << "           DIR  ";
     }
 
-    std::cout << fatdate_to_string32(file.creation_date, file.creation_time_hms)
+    std::cout << date_to_string(file.creation_date, file.creation_time_hms)
               << ' '
-              << fatdate_to_string32(file.modified_date, file.modified_time_hms)
+              << date_to_string(file.modified_date, file.modified_time_hms)
               << "  ";
 
     std::cout << file.name << std::endl;

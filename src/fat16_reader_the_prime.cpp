@@ -1,4 +1,5 @@
 #include "./fat16_reader_the_prime.hpp"
+#include "./date_to_string.hpp"
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -120,20 +121,6 @@ std::vector<fat16_directory_entry> get_root_files(fat16_boot_sector boot_sector,
 
 #define MAX_FILE_LEN_FAT16 13
 
-std::string fatdate_to_string(uint16_t date, uint16_t time) {
-    std::string day = std::to_string(date & 0x1F);
-    std::string month = std::to_string((date >> 5) & 0x0F);
-    std::string year = std::to_string(1980 + ((date >> 9) & 0x7F));
-    std::string hours = std::to_string((time >> 11) & 0x1F);
-    std::string minutes = std::to_string((time >> 5) & 0x3F);
-    std::string seconds = std::to_string(2 * (time & 0x1F));
-    return year + '-' + (month.size() == 1 ? "0" + month : month) + '-' +
-           (day.size() == 1 ? "0" + day : day) + ' ' +
-           (hours.size() == 1 ? "0" + hours : hours) + ':' +
-           (minutes.size() == 1 ? "0" + minutes : minutes) + ':' +
-           (seconds.size() == 1 ? "0" + seconds : seconds);
-}
-
 void print_file(fat16_directory_entry file, fat16_boot_sector boot_sector) {
     std::cout << ((file.attributes & 0x01) ? "        +  " : "        -  ");
     std::cout << ((file.attributes & 0x02) ? "     +  " : "     -  ");
@@ -159,9 +146,9 @@ void print_file(fat16_directory_entry file, fat16_boot_sector boot_sector) {
         std::cout << "           DIR  ";
     }
 
-    std::cout << fatdate_to_string(file.creation_date, file.creation_time_hms)
+    std::cout << date_to_string(file.creation_date, file.creation_time_hms)
               << ' '
-              << fatdate_to_string(file.modified_date, file.modified_time_hms)
+              << date_to_string(file.modified_date, file.modified_time_hms)
               << "  ";
 
     std::cout << file.name << std::endl;

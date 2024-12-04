@@ -50,7 +50,7 @@ struct _ext2_supablock {          // alignas(16)
     preallocate some blocks for new directory (see byte 0xCD in superblock)
     0x04: FS has journal == is an ext3 FS 0x08: inodes have extended attributes
     0x20: Directories use hash index Many other: https://ext4 . wiki . kernel .
-    org/index .php/Ext4_Disk_Layout * /
+    org/index .php/Ext4_Disk_Layout */
     uint32_t s_feature_incompat; /* 0x60: Incompatible feature set:
     0x01: Compression. Not implemented.
     0x02: Directory entries record the le type
@@ -117,7 +117,7 @@ struct ext2_supablock {           // alignas(16)
     preallocate some blocks for new directory (see byte 0xCD in superblock)
     0x04: FS has journal == is an ext3 FS 0x08: inodes have extended attributes
     0x20: Directories use hash index Many other: https://ext4 . wiki . kernel .
-    org/index .php/Ext4_Disk_Layout * /
+    org/index .php/Ext4_Disk_Layout */
     uint32_t s_feature_incompat; /* 0x60: Incompatible feature set:
     0x01: Compression. Not implemented.
     0x02: Directory entries record the le type
