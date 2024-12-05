@@ -75,3 +75,11 @@ cd ./bin/determined_fsreader ./images/ext2_fs_no_MBR.img
 ```
 
 ![Fourth one](./photos/4.png) # We need this!!!
+
+<mark> EXFAT </mark>
+
+```bash
+cd ./bin/determined_fsreader ./images/(exfat)
+```
+
+![Fifth one](./photos/5.png) # We need this!!!
