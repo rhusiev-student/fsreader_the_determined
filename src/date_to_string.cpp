@@ -63,7 +63,13 @@ std::string date_to_string(uint32_t seconds) {
     seconds -= hours * 3600;
     int minutes = seconds / 60;
     seconds -= minutes * 60;
-    final += std::to_string(hours) + ":" + std::to_string(minutes) + ":" +
-             std::to_string(seconds);
+    final +=
+        (hours < 10 ? "0" + std::to_string(hours) : std::to_string(hours)) +
+        ":" +
+        (minutes < 10 ? "0" + std::to_string(minutes)
+                      : std::to_string(minutes)) +
+        ":" +
+        (seconds < 10 ? "0" + std::to_string(seconds)
+                      : std::to_string(seconds));
     return final;
 }

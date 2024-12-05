@@ -42,8 +42,12 @@ int main(int argc, char **argv) {
     if (filesize >= 2048) {
         ext2_supablock supablock = read_supablock(filename);
         if (supablock.s_magic == 0xEF53) {
+            add_files(supablock, filename);
             std::cout << "Found ext2" << std::endl;
             print_ext2(supablock);
+            for (auto &to_delete_file : supablock.root_files) {
+                delete[] to_delete_file.name;
+            }
             return 0;
         }
     }

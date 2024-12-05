@@ -91,7 +91,7 @@ std::vector<fat16_directory_entry> get_root_files(fat16_boot_sector boot_sector,
                DIRECTORY_ENTRY_BYTES_BEFORE_CHAR_FAT16);
         dir_entry.name[11] = '\0';
         dir_entry.name[12] = '\0';
-        strncpy(dir_entry.name, root_files_raw[i].name, 12);
+        strncpy(dir_entry.name, root_files_raw[i].name, 11);
         // remove ' ' from the end (why are they even there?)
         int last_nonspace;
         for (last_nonspace = 7; last_nonspace > 0; last_nonspace--) {
@@ -116,6 +116,7 @@ std::vector<fat16_directory_entry> get_root_files(fat16_boot_sector boot_sector,
         dir_entry.name[last_nonspace + 5] = '\0';
         root_files.push_back(dir_entry);
     }
+    delete[] root_files_raw;
     return root_files;
 }
 

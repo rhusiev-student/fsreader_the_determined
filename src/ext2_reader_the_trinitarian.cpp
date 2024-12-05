@@ -5,52 +5,106 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <string>
+
+ext2_supablock::ext2_supablock(const _ext2_supablock &_supablock) {
+    memcpy(this, &_supablock,
+           reinterpret_cast<size_t>(&_supablock.s_volume_name) -
+               reinterpret_cast<size_t>(&_supablock));
+    s_algorithm_usage_bitmap = _supablock.s_algorithm_usage_bitmap;
+    s_prealloc_blocks = _supablock.s_prealloc_blocks;
+    s_prealloc_dir_blocks = _supablock.s_prealloc_dir_blocks;
+    s_padding1 = _supablock.s_padding1;
+    strncpy(s_volume_name, _supablock.s_volume_name, 16);
+    s_volume_name[16] = '\0';
+    int last_nonspace;
+    for (last_nonspace = 15; last_nonspace > 0; last_nonspace--) {
+        if (s_volume_name[last_nonspace] != ' ') {
+            break;
+        }
+    }
+    s_volume_name[last_nonspace + 1] = '\0';
+    strncpy(s_last_mounted, _supablock.s_last_mounted, 64);
+    s_last_mounted[64] = '\0';
+    int last_nonspace2;
+    for (last_nonspace2 = 63; last_nonspace2 > 0; last_nonspace2--) {
+        if (s_last_mounted[last_nonspace2] != ' ') {
+            break;
+        }
+    }
+    s_last_mounted[last_nonspace2 + 1] = '\0';
+}
 
 ext2_supablock read_supablock(std::filesystem::path path) {
     std::ifstream file(path, std::ios::binary);
     _ext2_supablock _supablock;
     file.seekg(1024);
     file.read(reinterpret_cast<char *>(&_supablock), sizeof(_ext2_supablock));
-    ext2_supablock supablock;
-    memcpy(&supablock, &_supablock,
-           reinterpret_cast<size_t>(&_supablock.s_volume_name) -
-               reinterpret_cast<size_t>(&_supablock));
-    supablock.s_algorithm_usage_bitmap = _supablock.s_algorithm_usage_bitmap;
-    supablock.s_prealloc_blocks = _supablock.s_prealloc_blocks;
-    supablock.s_prealloc_dir_blocks = _supablock.s_prealloc_dir_blocks;
-    supablock.s_padding1 = _supablock.s_padding1;
-    strncpy(supablock.s_volume_name, _supablock.s_volume_name, 16);
-    supablock.s_volume_name[16] = '\0';
-    int last_nonspace;
-    for (last_nonspace = 15; last_nonspace > 0; last_nonspace--) {
-        if (supablock.s_volume_name[last_nonspace] != ' ') {
-            break;
-        }
-    }
-    supablock.s_volume_name[last_nonspace + 1] = '\0';
-    strncpy(supablock.s_last_mounted, _supablock.s_last_mounted, 64);
-    supablock.s_last_mounted[64] = '\0';
-    for (last_nonspace = 63; last_nonspace > 0; last_nonspace--) {
-        if (supablock.s_last_mounted[last_nonspace] != ' ') {
-            break;
-        }
-    }
-    supablock.s_last_mounted[last_nonspace + 1] = '\0';
-
-    uint32_t block_size = supablock.s_log_block_size;
-    uint64_t root_directory_offset = block_size * supablock.s_first_data_block;
-    file.seekg(root_directory_offset);
-
-    ext2_directory_entry entry;
-    while (file.read(reinterpret_cast<char *>(&entry), sizeof(ext2_directory_entry))) {
-        if (entry.name[0] == 0) break; 
-        supablock.root_files.push_back(entry);
-    }
+    ext2_supablock supablock(_supablock);
 
     return supablock;
+}
+
+void add_files(ext2_supablock &supablock, std::filesystem::path path) {
+    std::ifstream file(path, std::ios::binary);
+    size_t block_size = (1 << supablock.s_log_block_size) * 1024;
+
+    size_t root_block_group_location;
+    if (block_size >= 2048) {
+        root_block_group_location = block_size;
+    } else if (block_size <= 1024) {
+        root_block_group_location = 1024 * 2;
+    } else {
+        std::cerr << "Unsupported block size" << std::endl;
+        return;
+    }
+    ext2_group_desc group_desc;
+    file.seekg(root_block_group_location);
+    file.read(reinterpret_cast<char *>(&group_desc), sizeof(ext2_group_desc));
+
+    std::cout << "block_size: " << block_size << std::endl;
+    std::cout << "bg_block_bitmap: " << group_desc.bg_block_bitmap << std::endl;
+    std::cout << "bg_inode_bitmap: " << group_desc.bg_inode_bitmap << std::endl;
+    std::cout << "bg_inode_table: " << group_desc.bg_inode_table << std::endl;
+    std::cout << "bg_free_blocks_count: " << group_desc.bg_free_blocks_count
+              << std::endl;
+    std::cout << "bg_free_inodes_count: " << group_desc.bg_free_inodes_count
+              << std::endl;
+    std::cout << "bg_used_dirs_count: " << group_desc.bg_used_dirs_count
+              << std::endl;
+
+    size_t root_inode_table_location = group_desc.bg_inode_table * block_size;
+    size_t root_index = (2 - 1) % supablock.s_inodes_per_group;
+    size_t root_location_inside_table = root_index * supablock.s_inode_size;
+    size_t root_location =
+        root_inode_table_location + root_location_inside_table;
+
+    ext2_inode root_entry;
+    file.seekg(root_location);
+    file.read(reinterpret_cast<char *>(&root_entry), sizeof(ext2_inode));
+
+    if (!(root_entry.i_blocks > 12)) {
+        size_t already_read = 0;
+        for (size_t i = 0; i < root_entry.i_blocks; i++) {
+            size_t already_read_in_block = 0;
+            while (already_read < root_entry.i_size &&
+                   already_read_in_block < block_size) {
+                file.seekg(root_entry.i_block[i] * block_size +
+                           already_read_in_block);
+                ext2_directory_entry entry;
+                file.read(reinterpret_cast<char *>(&entry),
+                          sizeof(ext2_directory_entry) - sizeof(entry.name));
+                entry.name = new char[entry.name_len + 1];
+                file.read(entry.name, entry.name_len);
+                entry.name[entry.name_len] = '\0';
+                supablock.root_files.push_back(entry);
+                already_read += entry.total_len;
+                already_read_in_block += entry.total_len;
+            }
+        }
+    }
 }
 
 void print_ext2(ext2_supablock partition) {
@@ -122,57 +176,17 @@ void print_ext2(ext2_supablock partition) {
         std::cout << std::hex << static_cast<uint16_t>(partition.s_uuid[i]);
     }
     std::cout << std::endl;
-    std::cout << "Root Directory Entries:\n";
-    for (const auto& file : partition.root_files) {
+    std::cout << "Root Directory Files:\n";
+    std::cout << "Read-only  " << "Hidden  " << "System  " << "Vol Label  "
+              << "Long name  " << "Archive  " << "Cluster Num  "
+              << "Size           " << "Creation date       "
+              << "Modified date        " << "Name" << std::endl;
+    for (const auto &file : partition.root_files) {
         print_file_ext2(file, partition);
     }
 }
 
-
-std::string ext2_date_to_string(uint16_t date, uint16_t time_hms) {
-    int year = ((date >> 9) & 0x7F) + 1980;
-    int month = (date >> 5) & 0x0F;
-    int day = date & 0x1F;
-
-    int hour = (time_hms >> 11) & 0x1F;
-    int minute = (time_hms >> 5) & 0x3F;
-    int second = (time_hms & 0x1F) * 2;
-
-    char buffer[20];
-    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d %02d:%02d:%02d",
-             year, month, day, hour, minute, second);
-    return std::string(buffer);
-}
-
-void print_file_ext2(const ext2_directory_entry& file, const ext2_supablock& superblock) {
-    std::cout << ((file.attributes & 0x01) ? "        +  " : "        -  ");
-    std::cout << ((file.attributes & 0x02) ? "     +  " : "     -  ");
-    std::cout << ((file.attributes & 0x04) ? "     +  " : "     -  ");
-    std::cout << ((file.attributes & 0x08) ? "        +  " : "        -  ");
-    std::cout << ((file.attributes & 0x0f) ? "        +  " : "        -  ");
-    std::cout << ((file.attributes & 0x20) ? "      +  " : "      -  ");
-
-    std::string cluster =
-            std::to_string(file.first_cluster_low) + " (" +
-            std::to_string(file.first_cluster_low * (1 << (10 + superblock.s_log_block_size))) +
-            " B)";
-    int to_add_spaces = 12 - cluster.size();
-    std::cout << std::string((to_add_spaces >= 0 ? to_add_spaces : 0), ' ')
-              << cluster;
-
-    if (!(file.attributes & 0x10)) {
-        std::string file_size = std::to_string(file.file_size);
-        int to_add_spaces = 12 - file_size.size();
-        std::cout << std::string((to_add_spaces >= 0 ? to_add_spaces : 0), ' ')
-                  << file_size << " B  ";
-    } else { 
-        std::cout << "           DIR  ";
-    }
-
-    std::cout << ext2_date_to_string(file.creation_date, file.creation_time_hms)
-              << ' '
-              << ext2_date_to_string(file.modified_date, file.modified_time_hms)
-              << "  ";
-
+void print_file_ext2(const ext2_directory_entry &file,
+                     const ext2_supablock &superblock) {
     std::cout << file.name << std::endl;
 }

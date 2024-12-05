@@ -96,7 +96,7 @@ std::vector<fat12_directory_entry> get_root_files12(fat12_boot_sector boot_secto
 
         dir_entry.name[11] = '\0';
         dir_entry.name[12] = '\0';
-        strncpy(dir_entry.name, raw_entry.name, 12);
+        strncpy(dir_entry.name, raw_entry.name, 11);
 
         int last_nonspace;
         for (last_nonspace = 7; last_nonspace > 0; last_nonspace--) {

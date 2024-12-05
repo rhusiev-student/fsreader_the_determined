@@ -38,7 +38,7 @@ struct fat32_boot_sector {
     bool correct_signature;
 };
 
-struct fat32_directory_entry {
+struct _fat32_directory_entry {
     char name[11];
     uint8_t attributes;
     uint8_t reserved;
@@ -51,6 +51,23 @@ struct fat32_directory_entry {
     uint16_t modified_date;
     uint16_t first_cluster_low;
     uint32_t file_size;
+};
+
+struct fat32_directory_entry {
+    char name[12];
+    uint8_t attributes;
+    uint8_t reserved;
+    uint8_t creation_time_in_tensecs;
+    uint16_t creation_time_hms;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t first_cluster_high;
+    uint16_t modified_time_hms;
+    uint16_t modified_date;
+    uint16_t first_cluster_low;
+    uint32_t file_size;
+
+    fat32_directory_entry(const _fat32_directory_entry& entry);
 };
 
 #pragma pack(pop)

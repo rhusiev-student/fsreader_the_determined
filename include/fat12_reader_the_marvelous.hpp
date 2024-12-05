@@ -57,7 +57,7 @@ struct fat12_directory_entry {
     uint16_t modified_date;
     uint16_t first_cluster1;
     uint32_t file_size;
-    char name[8 + 3]; // +2 for '\0', +1 for '.'
+    char name[11 + 3]; // +2 for '\0', +1 for '.'
 };
 
 #pragma pack(pop)

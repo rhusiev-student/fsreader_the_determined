@@ -3,8 +3,10 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <vector>
 
 #pragma pack(push, 1)
+// from presentation
 struct _ext2_supablock {          // alignas(16)
     uint32_t s_inodes_count;      /* 0x00: Inodes count */
     uint32_t s_blocks_count;      /* 0x04: Blocks count */
@@ -51,10 +53,10 @@ struct _ext2_supablock {          // alignas(16)
     0x04: FS has journal == is an ext3 FS 0x08: inodes have extended attributes
     0x20: Directories use hash index Many other: https://ext4 . wiki . kernel .
     org/index .php/Ext4_Disk_Layout */
-    uint32_t s_feature_incompat; /* 0x60: Incompatible feature set:
-    0x01: Compression. Not implemented.
-    0x02: Directory entries record the le type
-    Many other. */
+    uint32_t s_feature_incompat;       /* 0x60: Incompatible feature set:
+          0x01: Compression. Not implemented.
+          0x02: Directory entries record the le type
+          Many other. */
     uint32_t s_feature_ro_compat;      /* 0x64: Readonly=compatible feature set:
           0x01: Sparse superblocks == copies of the superblock and
           group descriptors are kept only in the groups whose
@@ -72,19 +74,48 @@ struct _ext2_supablock {          // alignas(16)
     uint32_t s_reserved[204]; /* Padding to the end of the block */
 };
 
+// from presentation
+struct ext2_group_desc {
+    uint32_t bg_block_bitmap;      /* 0x00: Blocks bitmap block */
+    uint32_t bg_inode_bitmap;      /* 0x04: Inodes bitmap block */
+    uint32_t bg_inode_table;       /* 0x08: Inodes table block */
+    uint16_t bg_free_blocks_count; /* 0x0C: Free blocks count */
+    uint16_t bg_free_inodes_count; /* 0x0E: Free inodes count */
+    uint16_t bg_used_dirs_count;   /* 0x10: Directories count */
+    uint16_t bg_pad;
+    uint32_t bg_reserved[3];
+};
+
+struct ext2_inode {
+    uint16_t i_mode;        /* File mode */
+    uint16_t i_uid;         /* Low 16 bits of Owner Uid */
+    uint32_t i_size;        /* Size in bytes */
+    uint32_t i_atime;       /* Access time */
+    uint32_t i_ctime;       /* Creation time */
+    uint32_t i_mtime;       /* Modification time */
+    uint32_t i_dtime;       /* Deletion Time */
+    uint16_t i_gid;         /* Low 16 bits of Group Id */
+    uint16_t i_links_count; /* Links count */
+    uint32_t i_blocks;      /* Blocks count */
+    uint32_t i_flags;       /* File flags */
+    uint32_t i_os_specific;
+    uint32_t i_block[12]; /* Pointers to blocks */
+    uint32_t i_singly_indirect_block;
+    uint32_t i_doubly_indirect_block;
+    uint32_t i_triply_indirect_block;
+    uint32_t i_generation; /* File version (for NFS) */
+    uint32_t i_file_acl;   /* File ACL */
+    uint32_t i_dir_acl;    /* Directory ACL */
+    uint32_t i_faddr;      /* Fragment address */
+    uint8_t i_os_specific2[12];
+};
+
 struct ext2_directory_entry {
-    char name[11];
-    uint8_t attributes;
-    uint8_t reserved;
-    uint8_t creation_time_in_tensecs;
-    uint16_t creation_time_hms;
-    uint16_t creation_date;
-    uint16_t access_date;
-    uint16_t first_cluster_high;
-    uint16_t modified_time_hms;
-    uint16_t modified_date;
-    uint16_t first_cluster_low;
-    uint32_t file_size;
+    uint32_t inode;
+    uint16_t total_len;
+    uint8_t name_len;
+    uint8_t file_type;
+    char *name;
 };
 
 struct ext2_supablock {           // alignas(16)
@@ -133,10 +164,10 @@ struct ext2_supablock {           // alignas(16)
     0x04: FS has journal == is an ext3 FS 0x08: inodes have extended attributes
     0x20: Directories use hash index Many other: https://ext4 . wiki . kernel .
     org/index .php/Ext4_Disk_Layout */
-    uint32_t s_feature_incompat; /* 0x60: Incompatible feature set:
-    0x01: Compression. Not implemented.
-    0x02: Directory entries record the le type
-    Many other. */
+    uint32_t s_feature_incompat;       /* 0x60: Incompatible feature set:
+          0x01: Compression. Not implemented.
+          0x02: Directory entries record the le type
+          Many other. */
     uint32_t s_feature_ro_compat;      /* 0x64: Readonly=compatible feature set:
           0x01: Sparse superblocks == copies of the superblock and
           group descriptors are kept only in the groups whose
@@ -144,7 +175,7 @@ struct ext2_supablock {           // alignas(16)
           0x02: File system uses a 64=bit le size
           0x04: RO_COMPAT_BTREE_DIR, not used
           Many other. */
-    uint8_t s_uuid[16];            /* 0x68: 128=bit uuid for volume */
+    uint8_t s_uuid[16];                /* 0x68: 128=bit uuid for volume */
     char s_volume_name[16 + 1];        /* 0x78: volume name */
     char s_last_mounted[64 + 1];       /* 0x88: directory where last mounted */
     uint32_t s_algorithm_usage_bitmap; /* 0xC8: For compression, not used */
@@ -152,13 +183,17 @@ struct ext2_supablock {           // alignas(16)
     uint8_t s_prealloc_dir_blocks; /* 0xCD: Nr to preallocate for dirs */
     uint16_t s_padding1;
     std::vector<ext2_directory_entry> root_files;
+
+    ext2_supablock(const _ext2_supablock &_supablock);
 };
 #pragma pack(pop)
 
 ext2_supablock read_supablock(std::filesystem::path path);
+void add_files(ext2_supablock &supablock, std::filesystem::path path);
 
 void print_ext2(ext2_supablock partition);
 
-void print_file_ext2(const ext2_directory_entry& file, const ext2_supablock& superblock);
+void print_file_ext2(const ext2_directory_entry &file,
+                     const ext2_supablock &superblock);
 
 #endif // INCLUDE_EXT2_READER_THE_TRINITARIAN_HPP_
