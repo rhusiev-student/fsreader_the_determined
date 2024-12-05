@@ -31,10 +31,10 @@ Authors (team):
 
 We decided to implement FAT16 first, so in the main task it will be FAT16 (how unpredictable :> )
 
-After compilation we need to get to the binary file
+After compilation we need to run the binary file
 
 ```bash
-cd ./bin/determined_fsreader ./images/hd0_just_FAT16_without_MBR.img     #test variant
+./bin/determined_fsreader ./images/hd0_just_FAT16_without_MBR.img     #test variant
 ```
 
 ### Results
@@ -49,6 +49,10 @@ We made 2 additional tasks:
 
 * FAT12 + FAT16 + FAT32 + exFAT  -- до 10 балів.
 * Ext2fs + FAT16 + FAT32 -- до 10.
+
+**There are a few non-working parts**:
+* FAT32 - long names
+* Ext2fs - reading more data about files than their names and sizes
 
 We implemented all of these and now will show how this works.
 
