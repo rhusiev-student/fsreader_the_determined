@@ -45,12 +45,13 @@ After this we can see the result using FAT16 image:
 
 # Additional tasks
 
-We made 2 additional tasks:
+We made (+-) 2 additional tasks:
 
 * FAT12 + FAT16 + FAT32 + exFAT  -- до 10 балів.
 * Ext2fs + FAT16 + FAT32 -- до 10.
 
 **There are a few non-working parts**:
+* exFAT - some issue with checking in the main.cpp
 * FAT32 - long names
 * Ext2fs - reading more data about files than their names and sizes
 
@@ -78,12 +79,9 @@ cd ./bin/determined_fsreader ./images/fat32_fs_without_mbr_2.img
 cd ./bin/determined_fsreader ./images/ext2_fs_no_MBR.img
 ```
 
-![Fourth one](./photos/4.png) # We need this!!!
+![Fourth one](./photos/4.png) 
 
 <mark> EXFAT </mark>
 
-```bash
-cd ./bin/determined_fsreader ./images/(exfat)
-```
-
-![Fifth one](./photos/5.png) # We need this!!!
+ExFAT does not work as it supposed to due to our skill issues and lack of concentration :(
+But code for it you can see in the src and inlcude dirs (we really tried to do this)
