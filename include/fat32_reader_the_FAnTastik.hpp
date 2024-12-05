@@ -54,7 +54,7 @@ struct _fat32_directory_entry {
 };
 
 struct fat32_directory_entry {
-    char name[12];
+    char _name[12];
     uint8_t attributes;
     uint8_t reserved;
     uint8_t creation_time_in_tensecs;
@@ -66,6 +66,7 @@ struct fat32_directory_entry {
     uint16_t modified_date;
     uint16_t first_cluster_low;
     uint32_t file_size;
+    std::string name;
 
     fat32_directory_entry(const _fat32_directory_entry& entry);
 };

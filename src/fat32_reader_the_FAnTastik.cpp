@@ -83,21 +83,37 @@ get_root_files32(const fat32_boot_sector &boot_sector,
 
     uint32_t root_start_sector =
         boot_sector.num_reserved_sectors +
-        (boot_sector.num_fats * boot_sector.each_fat_size32);
+        (boot_sector.num_fats * boot_sector.each_fat_size32) +
+        (boot_sector.root_cluster - 2) * boot_sector.sectors_per_cluster;
     uint32_t root_start_byte = root_start_sector * boot_sector.bytes_per_sector;
 
-    file.seekg(root_start_byte);
-
     std::vector<fat32_directory_entry> root_files;
-    while (true) {
-        _fat32_directory_entry entry{};
-        file.read(reinterpret_cast<char *>(&entry),
-                  sizeof(_fat32_directory_entry));
-        if (entry.name[0] == 0x00)
-            break; // end, no more valid entries exist
-        if (entry.name[0] == static_cast<char>(0xE5))
-            continue;
-        root_files.push_back(entry);
+    // while (true) {
+    //     _fat32_directory_entry entry{};
+    //     file.read(reinterpret_cast<char *>(&entry),
+    //               sizeof(_fat32_directory_entry));
+    //     if (entry.name[0] == 0x00)
+    //         break; // end, no more valid entries exist
+    //     if (entry.name[0] == static_cast<char>(0xE5))
+    //         continue;
+    //     root_files.push_back(entry);
+    // }
+    std::string saved_part;
+    for (size_t i = 0; i < boot_sector.sectors_per_cluster; i++) {
+        for (size_t j = 0;
+             j < boot_sector.bytes_per_sector / sizeof(_fat32_directory_entry);
+             j++) {
+            _fat32_directory_entry entry{};
+            file.seekg(root_start_byte + i * boot_sector.bytes_per_sector +
+                       j * sizeof(_fat32_directory_entry));
+            file.read(reinterpret_cast<char *>(&entry),
+                      sizeof(_fat32_directory_entry));
+            if (entry.attributes == 0x0F) {
+                continue;
+            }
+            root_files.push_back(entry);
+            root_files.back().name += saved_part;
+        }
     }
 
     return root_files;
@@ -105,11 +121,11 @@ get_root_files32(const fat32_boot_sector &boot_sector,
 
 fat32_directory_entry::fat32_directory_entry(
     const _fat32_directory_entry &entry) {
-    memcpy(name, entry.name, 11);
-    name[11] = '\0';
+    memcpy(_name, entry.name, 11);
+    _name[11] = '\0';
     int last_nonspace;
     for (last_nonspace = 7; last_nonspace > 0; last_nonspace--) {
-        if (name[last_nonspace] != ' ') {
+        if (_name[last_nonspace] != ' ') {
             break;
         }
     }
@@ -117,17 +133,17 @@ fat32_directory_entry::fat32_directory_entry(
     extension[3] = '\0';
     int j;
     for (j = 2; j >= 0; j--) {
-        extension[j] = name[8 + j];
-        if (name[8 + j] == ' ') {
+        extension[j] = _name[8 + j];
+        if (_name[8 + j] == ' ') {
             extension[j] = '\0';
         }
     }
-    strncpy(&name[last_nonspace + 2], extension, 4);
-    name[last_nonspace + 1] = '.';
+    strncpy(&_name[last_nonspace + 2], extension, 4);
+    _name[last_nonspace + 1] = '.';
     if (extension[0] == '\0') {
-        name[last_nonspace + 1] = '\0';
+        _name[last_nonspace + 1] = '\0';
     }
-    name[last_nonspace + 5] = '\0';
+    _name[last_nonspace + 5] = '\0';
     attributes = entry.attributes;
     reserved = entry.reserved;
     creation_time_in_tensecs = entry.creation_time_in_tensecs;
@@ -139,6 +155,7 @@ fat32_directory_entry::fat32_directory_entry(
     modified_date = entry.modified_date;
     first_cluster_low = entry.first_cluster_low;
     file_size = entry.file_size;
+    name = std::string(_name);
 }
 
 void print_file32(const fat32_directory_entry &file,

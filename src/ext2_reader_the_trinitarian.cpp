@@ -7,7 +7,18 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <string>
+
+std::map<size_t, std::string> filetypes = {
+    {0x0, "Regular file"},
+    {0x1, "Directory"},
+    {0x2, "Character device"},
+    {0x3, "Block device"},
+    {0x4, "FIFO"},
+    {0x5, "Symbolic link"},
+    {0x6, "Socket"},
+};
 
 ext2_supablock::ext2_supablock(const _ext2_supablock &_supablock) {
     memcpy(this, &_supablock,
@@ -177,16 +188,25 @@ void print_ext2(ext2_supablock partition) {
     }
     std::cout << std::endl;
     std::cout << "Root Directory Files:\n";
-    std::cout << "Read-only  " << "Hidden  " << "System  " << "Vol Label  "
-              << "Long name  " << "Archive  " << "Cluster Num  "
-              << "Size           " << "Creation date       "
-              << "Modified date        " << "Name" << std::endl;
+    std::cout << /* "Block Num  " << */ "File type          " // << "rwx owner  "
+              // << "ID owner  " << "Num hard links  " << "Sync updates  "
+              // << "Immutable file  " << "Append only  "
+              // << "Size           " << "Creation date       "
+              /* << "Modified date        " */ << "Name" << std::endl;
     for (const auto &file : partition.root_files) {
         print_file_ext2(file, partition);
     }
 }
 
+std::string pad(std::string str, size_t len) {
+    while (str.size() < len) {
+        str += ' ';
+    }
+    return str;
+}
+
 void print_file_ext2(const ext2_directory_entry &file,
                      const ext2_supablock &superblock) {
+    std::cout << pad(filetypes[file.file_type], 18) << ' ';
     std::cout << file.name << std::endl;
 }
